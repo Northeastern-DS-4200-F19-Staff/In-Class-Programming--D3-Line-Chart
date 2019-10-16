@@ -34,9 +34,11 @@ To learn about data parsing visit: http://learnjsdata.com/time.html
  
 **Step10**: In order to have the proper scales for your linechart, you need to know the max and min of your data. This is easy manually when your data is small, but with large data, this is cumbersome and can be done instead using d3.
 
-`var maxDate = d3.max(data,function(d){return d.date;});`    finds the max date and returns it\
-`var minDate = d3.min(data,function(d){return d.date;});`    finds the min date and returns it\
-`var maxPrice = d3.max(data,function(d){return d.price;});`  finds the max price and returns it\
+```
+var maxDate = d3.max(data,function(d){return d.date;});    finds the max date and returns it\
+var minDate = d3.min(data,function(d){return d.date;});    finds the min date and returns it\
+var maxPrice = d3.max(data,function(d){return d.price;});  finds the max price and returns it\
+```
 
 **Step11**: In your console check whether you can see the 2 max and 1 min value that you defined. If you can then you can later comment out the following commands before proceeding. This is for your own assurance that your variable is indeed returning the value that you are asking for.\
 `console.log(maxDate);`\
