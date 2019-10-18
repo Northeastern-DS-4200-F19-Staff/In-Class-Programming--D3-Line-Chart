@@ -10,16 +10,16 @@ In this activity, you are going to create a line-chart using D3.
 
 1. Wait for the output: `Serving HTTP on 0.0.0.0 port 8000 (http://0.0.0.0:8000/)`.
 
-1. Now open a web browser and navigate to the URL: http://localhost:8000
+1. Now open your web browser (Firefox or Chrome) and navigate to the URL: http://localhost:8000
 
 ## JavaScript Loading
 1. Open `index.html`. Just below this HTML comment:
 ```html
 <!-- Load the d3.js library( version 4 minified) -->
 ```
-add this line to load the D3 javascript code:
+add this line to load the D3 javascript code (note the version number v5):
 ```html
-<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3.v5.min.js"></script>
 ```
 1. You also have a file `linechart.js`. We want to load this javascript code as well. In `index.html`, just below this HTML comment:
 ```html
@@ -30,112 +30,154 @@ add this line:
 <script src="linechart.js"></script>
 ```
 
-## Data Loading
+## Data Loading and Parsing
 
 1. Open the file `data.csv` **with a text editor** and see what is inside. It is comma-separated. You will see a header row followed by several data rows with a date in the MM/D/YYYY format, e.g., `10/6/2018`, and a price, e.g., `33.9`. Note that you can open CSV files with Excel or other clever tools but they can make mistakes with parsing the data into their own formats.
 
-1. In `linechart.js` we are going to load this CSV file. Just below this JavaScript comment:
+1. In `linechart.js` we are going to load this CSV file. Add this line to use D3 to load the file and then pass it to a callback function inside `then`:
 ```javascript
-// Load and parse data
+d3.csv("data.csv").then(function(data) {
+  console.log(data);
+});
 ```
-add this line to use D3 to load the file and then pass it to a callback function:
+Once the data is loaded from the CSV file it is stored in the `data` variable. Your entire code for creating the line chart will go here inside the `then` function which happens after the data is asynchronously loaded.
+
+1. In your browser (Firefox or Chrome), open the browser developer tools by pressing `CTRL`+`SHIFT`+`I` (Windows/Linux) or `Cmd`+`Opt`+`I` and select the `Console` view. Here is where you see any output from `console.log` or any other [`console` messages](https://developer.mozilla.org/en-US/docs/Web/API/Console) such as errors. The browser developer tools and the `Console` view are very useful for debugging. Here you can see the that your code logged an array of 50 objects to the console. If you see this, your data has loaded!
+
+1. However, if you interact with the object by clicking the triangles you will notice that the date and price are enclosed in double-quotes (") and are thus strings. This is not the format that we want our data to be in for us to interpret it properly. Hence we need to parse the data into the formats we want. To learn about date parsing visit this site: http://learnjsdata.com/time.html
+
+1. To parse our date data to the format we want, we are going to define a variable called `parseDate` **before** the step where we loaded our data:
 ```javascript
-d3.csv("data.csv".get(function(error, data){
-  console.log(data)
+var parseDate = d3.timeParse('%m/%d/%Y');
+```
+Because our dates use forward slashes `/` as delimiters, our format string includes them. If our date was instead `02-02-2009`, we would parse it using `%m-%d-%Y`.
+
+1. Now we can use `parseDate` to parse our dates and we can use the built-in unary `+` operator to parse our numbers. Modify your call to `d3.csv` like so, passing an anonymous row conversion function that does the parsing:
+```javascript
+d3.csv('data.csv', function(d) {
+  return {
+    date: parseDate(d.date),
+    price: +d.price
+  };
+}).then(function(data) {
+  console.log(data);
+});
+```
+
+## Line Chart
+
+1. Instead of writing everything inside the `then` function of `d3.csv`, lets create a new function that creates our line chart given some data:
+```javascript
+function lineChart(data){
+  console.log(data);
+}
+```
+and replace the anonymous function inside `then` with our new function, like so:
+```javascript
+d3.csv("data.csv", function(d) {
+  return {
+    date: parseDate(d.date),
+    price: +d.price
+  };
+}).then(lineChart);
+```
+
+1. In order to have the proper scales for your line chart, you need to know the max and min of your data. This is easy to do manually for static, small datasets but in general this is cumbersome, error-prone, and can be done instead algorithmically. Add these lines after the `console.log` in `lineChart`:
+```javascript
+  var maxDate  = d3.max(data, function(d){return d.date; });
+  var minDate  = d3.min(data, function(d){return d.date; });
+  var maxPrice = d3.max(data, function(d){return d.price;});
+  console.log(maxDate, minDate, maxPrice);
+```
+
+1. In your browser `Console` view check whether those variables have been set. The `console.log`  is for your own assurance that your variable is indeed returning the value that you are asking for. You can remove this later.
+
+1. Check to see if you can see those variables in the browser debugger instead (`Debugger` in Firefox, `Sources` in Chrome). Open `linechart.js` in the debugger. Click on the line number beside the closing parenthesis `}` of the `lineChart` function to create a breakpoint. Refresh the browser page. You should see the variable values at this point inside the `Scopes` view (Firefox) or `Scope` view (Chrome). Chrome also shows the values in-line. You can click the `Resume` button (right-facing triangle, e.g. a play button) to resume execution. Remove the breakpoint by clicking the line number again.
+
+1.  Define the `width` and `height` for the `svg` you will use:
+```javascript
+var width  = 600;
+var height = 500;
+var margin = {
+  top: 30,
+  bottom: 30,
+  left: 30,
+  right: 30
 };
 ```
-           This is going to get the data and simply write it in the console. Hence go to your browser, and inspect the console. You will see that an array of 50 objects is there. If you see this in your console, your data has loaded!
 
-**Step 7**: However, in the console of your browser, you will notice that the date and price are both in **" "** and that is not the format that we want our data to be in. Hence we need to parse the data according to how we want it.
-To learn about data parsing visit: http://learnjsdata.com/time.html
-**To parse our data to the format we want, we are going to define a variable called parseData before the step where we loaded our data.**\
+For each of the following steps, you can save your file and reload the page in your web browser to see what has changed.
 
-`var parseDate = d3.timeParse("%m/%d/%Y");`   *[Because our data has / in them we are using /. If our data was like 02-02-2009, we would    parse it as (%m-%d-%Y)]*
-
-**Step 8**: Now we are going to go back to the loading data step that will come after the var parseDate step. **Now remove the console.log(data) part as that was only to check if our data has loaded or not.**
-
-**Step 9**: **Now we will call a function that will return our parsedData and the price as a Number instead of a string for each row of your data. We will use:
-
-d3.csv("data.csv")
-  .row(function(d){return{date:parseDate(d.date),price:Number(d.price)};})
- .get(function(error, data){
-
- **Your entire code of creating the line chart will go here inside this function that gets the data you loaded and also gives error if there is something wrong with the csv file**
-
- });
-
- ### Inside the get function:
-
-**Step 10**: In order to have the proper scales for your linechart, you need to know the max and min of your data. This is easy manually when your data is small, but with large data, this is cumbersome and can be done instead using d3.
-
+1. Now, create your `svg` inside the `body` in the DOM by using D3 to `select` the `body` and `append` the `svg`, giving it a `width`, `height`, and `background` color:
 ```javascript
-var maxDate = d3.max(data,function(d){return d.date;});    finds the max date  and returns it
-var minDate = d3.min(data,function(d){return d.date;});    finds the min date  and returns it
-var maxPrice = d3.max(data,function(d){return d.price;});  finds the max price and returns it
-```
-
-**Step 11**: In your console check whether you can see the 2 max and 1 min value that you defined. If you can then you can later comment out the following commands before proceeding. This is for your own assurance that your variable is indeed returning the value that you are asking for.
-console.log(maxDate);
-console.log(minDate);
-console.log(maxPrice);
-
-**Step 12**: Define the width and height for the svg you will use:\
-var width =  //Insert value;
-var height = //Insert value;
-var margin= {
-  bottom://insert value
-};
-
-**Step 13**: Define SVG by selecting the body element in the html and then appending the svg in it. Give the svg attributes of width and height and color if you like. Then create a variable for groups which we will use during drawing our axes.
 var svg = d3.select('body')
-            .append('svg')
-            .attr('width',width)
-    	  .attr('height',height)
-          // .style('background','#e9f7f2');
+  .append('svg')
+    .attr('width' , width)
+    .attr('height', height)
+    .style('background', '#efefef');
+```
 
- var chartGroup = svg.append('g')
-                    .attr('transform','translate(50,50)');
+1. Then create an SVG group `g` for all the elements that will make up our line chart.
+```javascript
+var chartGroup = svg
+  .append('g')
+    .attr('transform','translate(' + margin.left +',' + margin.top + ')');
+```
 
+1. Now we will define two scales for the x (`d3.scaleTime`) and y (`d3.scaleLinear`) axes and set their `domain` (in the data) and `range` (on the screen):
+```javascript
+var xScale = d3.scaleTime()
+  .domain([minDate, maxDate])
+  .range([0, width]);
+```
+```javascript
+var yScale = d3.scaleLinear()
+  .domain([0, maxPrice])
+  .range([height - margin.bottom - margin.top, 0]);
+```
 
-**Step 14**: Now we will define the scales for the x and y axis. We will define two variables x and y and set their domain and range.\
-var y = d3.scaleLinear() \
-          .domain([0,maxPrice])
-          .range([height-margin.bottom,0]);
-
-
-var x = d3.scaleTime()          **This is a scale for Time related data, it works the same way as other scales with domain and range**\
-          .domain([minDate,maxDate])
-          .range([0,width]);
-
-**Step 15**: Define the axes
-
-var yAxis = d3.axisLeft(y);
+1. Then we can draw our axes using these scales:
+```javascript
+var xAxis = d3.axisBottom(xScale);
 chartGroup.append('g')
-          .attr('class','y axis')
-          .attr('transform','translate(0, -40)')
-          .call(yAxis);
-
-var xAxis = d3.axisBottom(x);
+  .attr('class', 'x axis')
+  .attr('transform', 'translate(0, ' + (height - margin.bottom - margin.top) + ')')
+  .call(xAxis);
+```
+```javascript
+var yAxis = d3.axisLeft(yScale);
 chartGroup.append('g')
-          .attr('class','x axis')
-          .attr('transform','translate(-5, 330)')
-          .call(xAxis);
+  .attr('class', 'y axis')
+  .attr('transform', 'translate(0, 0)')
+  .call(yAxis);
+```
 
-
-**Step 16**: Draw the line
-
+1. Finally, we will draw the line:
+```javascript
 var line = d3.line()
-             .x(function(d){return x(d.date);})    
-             .y(function(d){return y(d.price);})
-
+  .x(function(d){return xScale(d.date);})    
+  .y(function(d){return yScale(d.price);})
+```
+```javascript
 chartGroup.append('path')
-          .attr('d',line(data));
+  .attr('d', line(data));
+```
 
-**Step 17**: Now if you save this and open the html in your browser, you will see that your linechart is messed up. THis is because, we have not added any CSS styling to it and because the fill of each path in the line chart is by default black and hence it looks that way. **So, open the line.css file and add:**\
+1. At this point, if you save and reload in your browser you will see that your line looks rather bizarre. This is because by default the line is filled with black and it is trying to close the polygon. Let's add CSS to fix this.
+
+1. First, add a CSS class to the lines we want to style (adding to the original code):
+```javascript
+chartGroup.append('path')
+  .attr('d', line(data))
+  .attr('class', 'dataLine');
+```
+Then, in `linechart.css` add these lines:
 ```CSS
-path{
-	stroke: #0000FF;
-	stroke-width:2px;
+.dataLine{
+	stroke: #0000BB;
+	stroke-width: 1px;
 	fill: none;
 }
 ```
+
+Congratulations! You should now have a line chart. What else can you do with this by playing with JavaScript, HTML, and CSS?
